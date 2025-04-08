@@ -1,0 +1,28 @@
+import random
+import math
+
+# Assuming the classes are defined above: Environment, StateMachine
+
+def run_simulation():
+    # Create an environment with resources
+    environment = Environment(resource_position=(5, 5), resource_quantity=5)
+    
+    # Create agents with different initial positions and states
+    agents = [
+        StateMachine(initial_state='A', x=random.uniform(0, 10), y=random.uniform(0, 10)),
+        StateMachine(initial_state='B', x=random.uniform(0, 10), y=random.uniform(0, 10)),
+        StateMachine(initial_state='C', x=random.uniform(0, 10), y=random.uniform(0, 10))
+    ]
+    
+    # Run a certain number of simulation steps
+    steps = 10
+    for step in range(steps):
+        print(f"Step {step+1}:")
+        for agent in agents:
+            agent.transition(environment, agents)  # Transition each agent
+        
+        print(f"Resources left: {environment.resource_quantity}")
+        print("-" * 20)
+
+# Run the simulation
+run_simulation()
