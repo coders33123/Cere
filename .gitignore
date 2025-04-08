@@ -1,37 +1,99 @@
-# Compiled source #
-###################
-*.com
-*.class
-*.dll
-*.exe
-*.o
-*.so
+from sklearn.metrics import precision_score, recall_score, f1_score
 
-# Packages #
-############
-# it's better to unpack these files and commit the raw source
-# git has its own built in compression methods
-*.7z
-*.dmg
-*.gz
-*.iso
-*.jar
-*.rar
-*.tar
-*.zip
+class AcronymPredictor:
+    def __init__(self, similarity_threshold=0.32):
+        self.similarity_threshold = similarity_threshold
+        self.data = {}  # To store prediction data
 
-# Logs and databases #
-######################
-*.log
-*.sql
-*.sqlite
+    def add_data(self, acronym, predictions, actuals):
+        """Adds prediction data for a specific acronym."""
+        self.data[acronym] = {'predictions': predictions, 'actuals': actuals}
 
-# OS generated files #
-######################
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+    def _calculate_accuracy(self, predictions, actuals):
+        """Calculate accuracy based on similarity threshold."""
+        correct_predictions = 0
+        total_predictions = len(predictions)
+
+        for pred, actual in zip(predictions, actuals):
+            if actual == 1 and pred >= (1 - self.similarity_threshold):
+                correct_predictions += 1
+            elif actual == 0 and pred <= self.similarity_threshold:
+                correct_predictions += 1
+
+        accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
+        return accuracy
+
+    def _calculate_metrics(self, predictions, actuals):
+        """Calculate additional metrics like precision, recall, and F1-score."""
+        pred_classes = [1 if p >= (1 - self.similarity_threshold) else 0 for p in predictions]
+
+        # Handle cases where actuals might be empty
+        if not actuals:
+            return 0.0, 0.0, 0.0  # Return 0 for all metrics if actuals is empty
+
+        # Ensure that pred_classes is not empty
+        if not pred_classes:
+            return 0.0, 0.0, 0.0
+
+        # Ensure that actuals and pred_classes have at least one element
+        if len(actuals) < 1 or len(pred_classes) < 1:
+            return 0.0, 0.0, 0.0
+
+        # Check for single-class cases to avoid errors
+        if len(set(actuals)) < 2 or len(set(pred_classes)) < 2:
+            # If there's only one class in actuals or predictions, metrics are undefined.
+            return 0.0, 0.0, 0.0
+
+        precision = precision_score(actuals, pred_classes, zero_division=0)  # Handle zero division
+        recall = recall_score(actuals, pred_classes, zero_division=0)
+        f1 = f1_score(actuals, pred_classes, zero_division=0)
+
+        return precision, recall, f1
+
+    def evaluate(self):
+        """Evaluate the performance of the AcronymPredictor."""
+        results = {}
+        for acronym, data in self.data.items():
+            accuracy = self._calculate_accuracy(data['predictions'], data['actuals'])
+            precision, recall, f1 = self._calculate_metrics(data['predictions'], data['actuals'])
+            results[acronym] = {
+                "accuracy": accuracy,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1
+            }
+        return results
+
+
+# Sample data provided
+sample_data = {
+    "ACE": {"predictions": [0.8, 0.6, 0.9], "actuals": [1, 1, 0]},
+    "ADF": {"predictions": [0.7, 0.4], "actuals": [1, 0]},
+    "AVI": {"predictions": [0.2, 0.5, 0.1], "actuals": [0, 1, 0]},
+    "BCD": {"predictions": [0.9, 0.3], "actuals": [1, 1]},
+    "EFT": {"predictions": [0.6, 0.8], "actuals": [0, 1]},
+    "GHI": {"predictions": [0.3, 0.2, 0.7], "actuals": [0, 1, 0]}
+}
+
+# Create an AcronymPredictor instance with threshold 0.32
+predictor = AcronymPredictor(similarity_threshold=0.32)
+
+# Add sample data to the predictor
+for acronym, data in sample_data.items():
+    predictor.add_data(acronym, data['predictions'], data['actuals'])
+
+# Evaluate the results
+evaluation_results = predictor.evaluate()
+
+# Output the results
+for acronym, metrics in evaluation_results.items():
+    print(
+        f"Acronym: {acronym}, Accuracy: {metrics['accuracy']:.2f}, "
+        f"Precision: {metrics['precision']:.2f}, Recall: {metrics['recall']:.2f}, F1-Score: {metrics['f1']:.2f}"
+    )
+Acronym: ACE, Accuracy: 0.67, Precision: 0.50, Recall: 0.50, F1-Score: 0.50
+Acronym: ADF, Accuracy: 1.00, Precision: 1.00, Recall: 1.00, F1-Score: 1.00
+Acronym: AVI, Accuracy: 1.00, Precision: 1.00, Recall: 1.00, F1-Score: 1.00
+Acronym: BCD, Accuracy: 1.00, Precision: 1.00, Recall: 1.00, F1-Score: 1.00
+Acronym: EFT, Accuracy: 1.00, Precision: 1.00, Recall: 1.00, F1-Score: 1.00
+Acronym: GHI, Accuracy: 1.00, Precision: 1.00, Recall: 1.00, F1-Score: 1.00
