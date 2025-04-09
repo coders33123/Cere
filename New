@@ -1,0 +1,179 @@
+ from dataclasses import dataclass
+from typing import List, Optional, Dict
+
+# ─────────────────────────────────────────────
+# Data Structures
+# ─────────────────────────────────────────────
+
+@dataclass
+class NodeData:
+    type: str
+    symbol: Optional[str] = None
+    state: str = "active"
+
+# ─────────────────────────────────────────────
+# Graph Manager
+# ─────────────────────────────────────────────
+
+class GraphManager:
+    def __init__(self):
+        self.graph = {}  # node_id -> {'data': NodeData, neighbor1: edge_data, ...}
+
+    def add_node(self, node_id, node_data):
+        self.graph[node_id] = {'data': node_data}
+
+    def add_edge(self, node1, node2, edge_data):
+        if node1 not in self.graph:
+            self.add_node(node1, NodeData(type="Unknown"))
+        if node2 not in self.graph:
+            self.add_node(node2, NodeData(type="Unknown"))
+
+        self.graph[node1][node2] = edge_data
+        if node1 != node2:
+            self.graph[node2][node1] = edge_data
+
+    def update_edge(self, node1, node2, edge_data):
+        if node1 in self.graph and node2 in self.graph[node1]:
+            self.graph[node1][node2].update(edge_data)
+            if node1 != node2:
+                self.graph[node2][node1].update(edge_data)
+
+    def decay_edges(self, decay_rate):
+        for node1 in self.graph:
+            for node2 in list(self.graph[node1]):
+                if node2 != 'data' and 'weight' in self.graph[node1][node2]:
+                    self.graph[node1][node2]['weight'] *= decay_rate
+                    if self.graph[node1][node2]['weight'] <= 0:
+                        del self.graph[node1][node2]
+                        if node2 in self.graph and node1 in self.graph[node2]:
+                            del self.graph[node2][node1]
+
+    def increase_interaction(self, node1, node2, increase_amount):
+        if node1 in self.graph and node2 in self.graph[node1]:
+            self.graph[node1][node2]['interactions'] += increase_amount
+            if node1 != node2:
+                self.graph[node2][node1]['interactions'] += increase_amount
+
+    def get_neighbors(self, node):
+        return [n for n in self.graph.get(node, {}) if n != 'data']
+
+    def get_edge_data(self, node1, node2):
+        return self.graph.get(node1, {}).get(node2, None)
+
+    def get_node_data(self, node):
+        return self.graph.get(node, {}).get('data', None)
+
+# ─────────────────────────────────────────────
+# Symbolic Decoder
+# ─────────────────────────────────────────────
+
+class SymbolicDecoder:
+    def __init__(self):
+        self.triadic_mappings = {
+            ("Start", "Role", "Release"): "Lifecycle",
+            ("Flow", "Control", "Feedback"): "Loop",
+            ("Node", "Edge", "Node"): "Bridge",
+        }
+        self.vowel_rules = {
+            "A": "open",
+            "E": "merge",
+            "I": "direct",
+            "O": "oscillate",
+            "U": "collapse",
+        }
+
+    def decode_path(self, path: List[str], graph: GraphManager) -> Dict:
+        roles = self._apply_triadic_mapping(path, graph)
+        roles = self._apply_vowel_flow(path, roles, graph)
+        roles = self._apply_role_shifting(path, roles, graph)  # Placeholder for future rules
+        scored_paths = self._score_paths(roles)
+        best_path = max(scored_paths, key=lambda item: item['score']) if scored_paths else {}
+        return best_path
+
+    def _apply_triadic_mapping(self, path: List[str], graph: GraphManager) -> List[str]:
+        roles = []
+        for i in range(len(path)):
+            if i > 0 and i < len(path) - 1:
+                prev = graph.get_node_data(path[i - 1])
+                curr = graph.get_node_data(path[i])
+                next_ = graph.get_node_data(path[i + 1])
+                if prev and curr and next_:
+                    key = (prev.type, curr.type, next_.type)
+                    roles.append(self.triadic_mappings.get(key, "Unknown"))
+                else:
+                    roles.append("Unknown")
+            else:
+                roles.append("Unknown")
+        return roles
+
+    def _apply_vowel_flow(self, path: List[str], roles: List[str], graph: GraphManager) -> List[str]:
+        updated_roles = roles[:]
+        for i, node_id in enumerate(path):
+            node_data = graph.get_node_data(node_id)
+            if node_data and node_data.symbol:
+                symbol = node_data.symbol.upper()
+                flow_type = self.vowel_rules.get(symbol)
+                if flow_type == "open":
+                    updated_roles[i] = f"{roles[i]}_expanded"
+                elif flow_type == "merge" and i > 0:
+                    updated_roles[i - 1] = f"{roles[i - 1]}_merged"
+                elif flow_type == "direct":
+                    updated_roles[i] = f"{roles[i]}_focused"
+                elif flow_type == "oscillate" and i < len(roles) - 1:
+                    updated_roles[i + 1] = f"{roles[i + 1]}_shifted"
+                elif flow_type == "collapse":
+                    updated_roles[i] = "Collapsed"
+        return updated_roles
+
+    def _apply_role_shifting(self, path: List[str], roles: List[str], graph: GraphManager) -> List[str]:
+        # Placeholder for symbolic role shifting logic
+        return roles
+
+    def _score_paths(self, roles: List[str]) -> List[Dict]:
+        path_score = 0
+        symbolic_seq = []
+        role_weights = {
+            "Lifecycle": 3,
+            "Loop": 2,
+            "Bridge": 1,
+            "Unknown": -1
+        }
+        for role in roles:
+            symbolic_seq.append(role)
+            base_role = role.split("_")[0]  # handle merged/expanded suffix
+            path_score += role_weights.get(base_role, 0)
+        return [{'path': roles, 'score': path_score, 'symbolic_sequence': symbolic_seq}]
+
+# ─────────────────────────────────────────────
+# Simulation Engine (Basic Tick)
+# ─────────────────────────────────────────────
+
+class SimulationEngine:
+    def __init__(self, graph: GraphManager, decoder: SymbolicDecoder):
+        self.graph = graph
+        self.decoder = decoder
+        self.tick_count = 0
+
+    def tick(self, paths: List[List[str]], decay_rate: float = 0.9):
+        print(f"\n[Tick {self.tick_count}] Decaying edges...")
+        self.graph.decay_edges(decay_rate)
+
+        for path in paths:
+            result = self.decoder.decode_path(path, self.graph)
+            print(f"Decoded Path: {path}")
+            print(f" -> Roles: {result.get('symbolic_sequence')}")
+            print(f" -> Score: {result.get('score')}")
+        self.tick_count += 1
+if __name__ == "__main__":
+    gm = GraphManager()
+    sd = SymbolicDecoder()
+
+    # Sample setup
+    gm.add_node("A", NodeData(type="Start", symbol="A"))
+    gm.add_node("B", NodeData(type="Role", symbol="I"))
+    gm.add_node("C", NodeData(type="Release", symbol="U"))
+    gm.add_edge("A", "B", {"weight": 1.0, "interactions": 1})
+    gm.add_edge("B", "C", {"weight": 1.0, "interactions": 1})
+
+    sim = SimulationEngine(gm, sd)
+    sim.tick(paths=[["A", "B", "C"]])
