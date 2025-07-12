@@ -1,1 +1,611 @@
-1
+import math
+import random
+import re
+from collections import deque
+import numpy as np
+
+# Assuming AdvancedEvolvingOSSimulation and EvolvingOSSimulation are defined earlier in the context
+# For a standalone execution, you'd need to provide their definitions.
+# As a placeholder for this continuation, let's assume a basic structure
+# if not already defined:
+try:
+    _ = AdvancedEvolvingOSSimulation
+except NameError:
+    class EvolvingOSSimulation:
+        def __init__(self, initial_state=None, learning_rate=0.01):
+            self.system_state = initial_state if initial_state is not None else {}
+            self.learning_rate = learning_rate
+            self.action_history = deque(maxlen=100) # To store history for context
+
+    class AdvancedEvolvingOSSimulation(EvolvingOSSimulation):
+        def __init__(self, initial_state=None, learning_rate=0.1, decay_rate=0.95, context_window=3):
+            super().__init__(initial_state=initial_state, learning_rate=learning_rate)
+            self.system_state = initial_state if initial_state is not None else {
+                'resource_share_multimedia': 0.6,
+                'priority_level_multimedia': 7,
+                'latency_tolerance_multimedia': 0.1,
+                'resource_share_background': 0.2,
+                'priority_level_background': 3,
+                'latency_tolerance_background': 10.0,
+                'responsiveness_weight': 0.8,
+                'throughput_weight': 0.2,
+            }
+            self.decay_rate = decay_rate
+            self.context_window = context_window
+            self.action_value_estimates = {}
+            print("Placeholder Advanced simulation initialized.")
+
+
+class HyperAdvancedEvolvingOSSimulation(AdvancedEvolvingOSSimulation):
+    """
+    A further evolution, incorporating:
+    - More complex, potentially non-linear state representation (e.g., features).
+    - More sophisticated intent parsing (NLP/NLU integration).
+    - Policy Gradient or Actor-Critic reinforcement learning.
+    - A simulated environment with multiple, interacting processes and resources.
+    - External factors simulation (network congestion, CPU temperature).
+    - Uncertainty modeling (Bayesian methods).
+    - Explainable AI elements (trace of decision process).
+    """
+
+    def __init__(self, initial_state=None, learning_rate=0.001, decay_rate=0.98, context_window=5, feature_dim=10):
+        super().__init__(initial_state=initial_state, learning_rate=learning_rate, decay_rate=decay_rate, context_window=context_window)
+
+        self.feature_dim = feature_dim
+        # Initialize internal system state (parameters the OS can control/learn)
+        self.system_state = initial_state if initial_state is not None else {
+            'resource_share_multimedia': 0.6, # % of CPU/GPU/Memory allocated
+            'priority_level_multimedia': 7,   # Priority queue level (1-10)
+            'latency_tolerance_multimedia': 0.1, # Acceptable latency (seconds)
+            'resource_share_background': 0.2,
+            'priority_level_background': 3,
+            'latency_tolerance_background': 10.0,
+            'resource_share_networking': 0.1,
+            'priority_level_networking': 5,
+            'responsiveness_weight': 0.8,      # Internal weight for responsiveness in optimization
+            'throughput_weight': 0.2,          # Internal weight for throughput
+            'energy_efficiency_weight': 0.1,   # New: weight for energy
+            'disk_io_priority_factor': 0.5,    # New: influence on disk I/O
+            'network_bandwidth_target': 1000,  # New: MB/s target
+        }
+        self.system_features = self._state_to_features(self.system_state)
+
+        # Policy model (Actor): maps state features to probabilities of taking actions.
+        # Storing weights for each possible action, each weight vector corresponds to feature_dim
+        self.all_possible_actions = self._generate_all_possible_actions()
+        self.policy_weights = {str(action): np.random.uniform(-0.1, 0.1, self.feature_dim)
+                               for action in self.all_possible_actions}
+
+        # Value model (Critic): maps state features to estimated value of the state.
+        self.value_weights = np.random.uniform(-0.1, 0.1, self.feature_dim)
+
+        # Simulated Environment: tracks dynamic resource usage, performance metrics
+        self.environment = {
+            'cpu_load': 0.5,           # Current overall CPU load (0-1)
+            'memory_pressure': 0.3,    # Current memory pressure (0-1)
+            'network_congestion': 0.2, # External network congestion (0-1)
+            'disk_io_queue': 0.1,      # Disk I/O queue length (0-1)
+            'temperature': 50,         # Simulated system temperature (C)
+
+            # Observed performance metrics (influenced by system_state and environment factors)
+            'observed_multimedia_latency': 0.15, # Actual latency for multimedia tasks
+            'observed_background_throughput': 800, # Actual throughput for background tasks (MB/s)
+            'observed_energy_consumption': 70,   # Actual energy consumption (Watts)
+        }
+        print("Hyper Advanced simulation initialized.")
+        print("Initial system features (example):", self.system_features[:3])
+        # print("Initial policy weights (sample):", {k: v[:3] for k, v in list(self.policy_weights.items())[:3]})
+        # print("Initial value weights:", self.value_weights[:3])
+
+    def _state_to_features(self, state):
+        """
+        Converts the internal system state dictionary and current environment
+        into a numerical feature vector. This is the OS's 'perception'.
+        """
+        # Complex mapping: normalized values, interaction terms, environment context
+        features = [
+            state.get('resource_share_multimedia', 0),
+            state.get('priority_level_multimedia', 0) / 10.0,
+            state.get('latency_tolerance_multimedia', 0),
+            state.get('resource_share_background', 0),
+            state.get('priority_level_background', 0) / 10.0,
+            state.get('responsiveness_weight', 0),
+            state.get('throughput_weight', 0),
+            state.get('energy_efficiency_weight', 0),
+            state.get('disk_io_priority_factor', 0),
+            state.get('network_bandwidth_target', 0) / 2000.0, # Normalize large value
+
+            # Incorporate environment features directly into the state for decision making
+            self.environment.get('cpu_load', 0),
+            self.environment.get('memory_pressure', 0),
+            self.environment.get('network_congestion', 0),
+            self.environment.get('disk_io_queue', 0),
+            self.environment.get('temperature', 0) / 100.0, # Normalize temp
+            self.environment.get('observed_multimedia_latency', 0),
+            self.environment.get('observed_background_throughput', 0) / 1000.0,
+            self.environment.get('observed_energy_consumption', 0) / 100.0,
+
+            # Add interaction terms or non-linearities
+            (state.get('resource_share_multimedia', 0) * self.environment.get('cpu_load', 0)),
+            (state.get('priority_level_background', 0) / 10.0 * self.environment.get('disk_io_queue', 0))
+        ]
+
+        # Pad or truncate features to match feature_dim
+        features = (features + [0.0] * self.feature_dim)[:self.feature_dim]
+        return np.array(features)
+
+    def _generate_all_possible_actions(self):
+        """ Generates a representative set of possible atomic actions.
+            Actions now modify the system_state directly.
+        """
+        actions = []
+        # Define base increments/decrements for parameters
+        param_changes = {
+            'resource_share': 0.05,
+            'priority_level': 1,
+            'latency_tolerance': 0.01,
+            'weight': 0.05,
+            'disk_io_priority_factor': 0.1,
+            'network_bandwidth_target': 50
+        }
+
+        # Iterate over all system_state parameters to generate adjust actions
+        for param in self.system_state.keys():
+            base_name = ''
+            if 'resource_share' in param: base_name = 'resource_share'
+            elif 'priority_level' in param: base_name = 'priority_level'
+            elif 'latency_tolerance' in param: base_name = 'latency_tolerance'
+            elif 'weight' in param: base_name = 'weight'
+            elif 'disk_io_priority_factor' in param: base_name = 'disk_io_priority_factor'
+            elif 'network_bandwidth_target' in param: base_name = 'network_bandwidth_target'
+
+            if base_name:
+                amount = param_changes.get(base_name, 0)
+                if amount > 0:
+                    actions.append({'type': 'adjust_param', 'param': param, 'direction': 'increase', 'amount': amount})
+                    actions.append({'type': 'adjust_param', 'param': param, 'direction': 'decrease', 'amount': amount})
+
+        # Add a "no-op" action
+        actions.append({'type': 'no_op'})
+        return actions
+
+    def _parse_intent(self, intent_string):
+        """
+        Sophisticated intent parsing using NLP/NLU concepts.
+        Extracts goals, metrics, task types, constraints, and sentiment.
+        """
+        intent_string = intent_string.lower()
+        parsed_intent = {
+            'goals': [],
+            'target_metrics': [],
+            'task_types': [],
+            'constraints': {},
+            'sentiment': 0 # -1 (negative), 0 (neutral), 1 (positive)
+        }
+
+        # Goals (more nuanced keywords)
+        if re.search(r'\b(optimize|improve|boost|accelerate|speed up)\b', intent_string):
+            parsed_intent['goals'].append('optimize')
+        if re.search(r'\b(prioritize|focus on|dedicate resources)\b', intent_string):
+            parsed_intent['goals'].append('prioritize')
+        if re.search(r'\b(reduce|decrease|conserve|minimize)\b', intent_string):
+            parsed_intent['goals'].append('reduce')
+        if re.search(r'\b(maintain|keep stable|ensure consistency)\b', intent_string):
+            parsed_intent['goals'].append('maintain')
+
+        # Target metrics
+        if re.search(r'\b(responsiveness|latency|lag|delay)\b', intent_string):
+            parsed_intent['target_metrics'].append('responsiveness')
+        if re.search(r'\b(throughput|speed|bandwidth|data transfer)\b', intent_string):
+            parsed_intent['target_metrics'].append('throughput')
+        if re.search(r'\b(energy|power|battery life)\b', intent_string):
+            parsed_intent['target_metrics'].append('energy_efficiency')
+        if re.search(r'\b(cpu usage|processor load)\b', intent_string):
+            parsed_intent['target_metrics'].append('cpu_load')
+        if re.search(r'\b(memory usage|ram)\b', intent_string):
+            parsed_intent['target_metrics'].append('memory_pressure')
+
+
+        # Task types
+        if re.search(r'\b(multimedia|video|audio|streaming|gaming)\b', intent_string):
+            parsed_intent['task_types'].append('multimedia')
+        if re.search(r'\b(background|computation|batch processing|rendering|ai task)\b', intent_string):
+            parsed_intent['task_types'].append('background')
+        if re.search(r'\b(network|download|upload|web Browse)\b', intent_string):
+            parsed_intent['task_types'].append('networking')
+        if re.search(r'\b(disk|file operations|io)\b', intent_string):
+            parsed_intent['task_types'].append('disk_io')
+
+
+        # Constraints: numerical targets, probabilities, timeframes
+        # Example: "latency to 0.05s", "throughput by 90%", "80% probability"
+        num_val_match = re.search(r'(\d+\.?\d*)\s*(?:%|ms|s|mb/s|gb/s|watts?)?', intent_string)
+        if num_val_match:
+            value = float(num_val_match.group(1))
+            unit = num_val_match.group(2) if num_val_match.group(2) else ''
+
+            if '%' in unit:
+                parsed_intent['constraints']['percentage_target'] = value / 100.0
+            elif 'ms' in unit:
+                parsed_intent['constraints']['time_target_seconds'] = value / 1000.0
+            elif 's' in unit:
+                parsed_intent['constraints']['time_target_seconds'] = value
+            elif 'mb/s' in unit or 'gb/s' in unit:
+                parsed_intent['constraints']['throughput_target'] = value * (1000 if 'gb/s' in unit else 1)
+            elif 'watts' in unit:
+                parsed_intent['constraints']['energy_target_watts'] = value
+
+        prob_match = re.search(r'(\d+)% probability', intent_string)
+        if prob_match:
+            parsed_intent['constraints']['prob_target'] = int(prob_match.group(1)) / 100.0
+
+        time_match = re.search(r'within (\d+)\s?(minutes|seconds)', intent_string)
+        if time_match:
+            time_value = int(time_match.group(1))
+            time_unit = time_match.group(2)
+            parsed_intent['constraints']['time_target_seconds'] = time_value * (60 if 'minute' in time_unit else 1)
+
+        # Basic Sentiment Analysis (keywords only)
+        if re.search(r'\b(urgent|critical|immediately|now)\b', intent_string):
+            parsed_intent['sentiment'] = 1 # More positive/urgent
+        if re.search(r'\b(slow|bad|laggy|poor)\b', intent_string):
+            parsed_intent['sentiment'] = -1 # Negative
+
+        print("Parsed Hyper-Advanced intent:", parsed_intent)
+        return parsed_intent
+
+    def _policy_network_output_raw_scores(self, features):
+        """
+        The 'Actor' part: Calculates raw scores (logits) for each possible action
+        given the current state features, using the policy weights.
+        """
+        raw_scores = {}
+        for action_str, weights in self.policy_weights.items():
+            # Dot product of features and action-specific weights
+            raw_scores[action_str] = np.dot(features, weights)
+        return raw_scores
+
+    def _select_action_probabilistically(self, current_features, parsed_intent):
+        """
+        Selects an action based on the policy network's output probabilities.
+        Uses softmax to convert raw scores to probabilities, then samples.
+        """
+        raw_scores = self._policy_network_output_raw_scores(current_features)
+        
+        # Adjust raw scores based on intent sentiment - a simple form of bias
+        if parsed_intent['sentiment'] > 0: # If urgent/positive sentiment
+            for action_str, score in raw_scores.items():
+                if 'increase' in action_str or 'prioritize' in action_str: # Favor actions that increase/prioritize
+                    raw_scores[action_str] += 0.5 # Boost scores
+        elif parsed_intent['sentiment'] < 0: # If negative sentiment
+             for action_str, score in raw_scores.items():
+                if 'decrease' in action_str or 'reduce' in action_str: # Favor actions that decrease/reduce
+                    raw_scores[action_str] += 0.5 # Boost scores
+
+
+        # Convert raw scores to probabilities using softmax
+        # Add a small epsilon to avoid math.exp(large_number) overflow if not using np.exp robustly
+        exp_scores = np.exp(list(raw_scores.values()) - np.max(list(raw_scores.values()))) # For numerical stability
+        probabilities = exp_scores / np.sum(exp_scores)
+
+        # Select an action based on these probabilities
+        selected_action_str = np.random.choice(list(raw_scores.keys()), p=probabilities)
+        selected_action = eval(selected_action_str) # Convert string representation back to dict
+
+        print(f"Action probabilities: {[f'{p:.2f}' for p in probabilities]}")
+        print(f"Selected action by policy: {selected_action}")
+        return selected_action, probabilities[list(raw_scores.keys()).index(selected_action_str)]
+
+
+    def _get_state_value(self, features):
+        """
+        The 'Critic' part: Estimates the value of a given state (feature vector)
+        using the value weights.
+        """
+        return np.dot(features, self.value_weights)
+
+    def _apply_action_to_state(self, current_state, action):
+        """
+        Applies the selected action to the current system_state parameters.
+        Includes clipping to keep parameters within logical bounds.
+        """
+        new_state = current_state.copy()
+        if action['type'] == 'adjust_param':
+            param = action['param']
+            amount = action['amount']
+            direction = action['direction']
+
+            if param in new_state:
+                change = amount if direction == 'increase' else -amount
+                new_state[param] += change
+
+                # Apply clipping to keep parameters within valid ranges
+                if 'resource_share' in param:
+                    new_state[param] = max(0.0, min(1.0, new_state[param]))
+                elif 'priority_level' in param:
+                    new_state[param] = max(1, min(10, new_state[param]))
+                elif 'latency_tolerance' in param:
+                    new_state[param] = max(0.01, new_state[param]) # Latency tolerance must be positive
+                elif 'weight' in param:
+                    new_state[param] = max(0.0, min(1.0, new_state[param])) # Weights between 0 and 1
+                elif 'disk_io_priority_factor' in param:
+                    new_state[param] = max(0.0, min(1.0, new_state[param]))
+                elif 'network_bandwidth_target' in param:
+                    new_state[param] = max(100, new_state[param]) # Min bandwidth
+
+        return new_state
+
+
+    def _update_environment(self, current_state_after_action):
+        """
+        Simulates the dynamic changes in the OS environment.
+        This is where the complex, emergent behavior happens.
+        The current_state_after_action (our learned policy parameters)
+        directly influences the environment's observed metrics.
+        External factors (noise, trends) also play a role.
+        """
+        # Simulate external factors fluctuating (noise, trends)
+        self.environment['cpu_load'] = max(0.0, min(1.0, self.environment['cpu_load'] + random.uniform(-0.05, 0.05)))
+        self.environment['memory_pressure'] = max(0.0, min(1.0, self.environment['memory_pressure'] + random.uniform(-0.03, 0.03)))
+        self.environment['network_congestion'] = max(0.0, min(1.0, self.environment['network_congestion'] + random.uniform(-0.04, 0.04)))
+        self.environment['disk_io_queue'] = max(0.0, min(1.0, self.environment['disk_io_queue'] + random.uniform(-0.02, 0.02)))
+        self.environment['temperature'] = max(30, min(90, self.environment['temperature'] + random.uniform(-2, 2))) # Simulate temperature
+
+        # Simulate observed performance metrics based on current system_state (policy)
+        # and current environment factors. This is the 'true' system dynamics.
+        # Multimedia Latency (lower is better):
+        # Influenced negatively by multimedia resource share (less latency with more share),
+        # positively by multimedia priority, and positively by network congestion/cpu load.
+        self.environment['observed_multimedia_latency'] = max(0.01,
+            (1.0 - current_state_after_action['resource_share_multimedia']) * 0.2 +
+            (10 - current_state_after_action['priority_level_multimedia']) * 0.01 +
+            self.environment['network_congestion'] * 0.15 +
+            self.environment['cpu_load'] * 0.1 +
+            random.gauss(0, 0.02) # Noise
+        )
+
+        # Background Throughput (higher is better):
+        # Influenced positively by background resource share/priority,
+        # negatively by disk I/O queue / memory pressure.
+        self.environment['observed_background_throughput'] = max(10,
+            current_state_after_action['resource_share_background'] * 1000 +
+            current_state_after_action['priority_level_background'] * 50 -
+            self.environment['disk_io_queue'] * 200 -
+            self.environment['memory_pressure'] * 150 +
+            random.gauss(0, 50) # Noise
+        )
+
+        # Energy Consumption (lower is better):
+        # Influenced by total resource shares, temperature, and current performance weights.
+        self.environment['observed_energy_consumption'] = max(10,
+            (current_state_after_action['resource_share_multimedia'] +
+             current_state_after_action['resource_share_background'] +
+             current_state_after_action['resource_share_networking']) * 30 +
+            self.environment['temperature'] * 0.5 +
+            current_state_after_action['responsiveness_weight'] * 10 + # Higher weights for performance might mean more energy
+            current_state_after_action['throughput_weight'] * 5 +
+            random.gauss(0, 5) # Noise
+        )
+        print("Updated Environment State:", {k: f"{v:.2f}" for k, v in self.environment.items()})
+
+
+    def _calculate_reward(self, parsed_intent, current_environment, state_before_action, state_after_action):
+        """
+        Calculates a complex reward signal based on how well the system's
+        performance (from the environment) meets the user's intent and internal goals.
+        This is the OS's 'evaluation function'.
+        """
+        reward = 0.0
+
+        # Base reward for meeting general system health goals (e.g., balanced load, low temperature)
+        reward += (1.0 - self.environment['cpu_load']) * 0.1
+        reward += (1.0 - self.environment['memory_pressure']) * 0.1
+        reward += (1.0 - (self.environment['temperature'] - 30) / 60) * 0.1 # Normalize 30-90C to 0-1
+
+        # Reward based on intent goals and target metrics
+        if 'optimize' in parsed_intent['goals'] or 'prioritize' in parsed_intent['goals']:
+            if 'responsiveness' in parsed_intent['target_metrics']:
+                # Penalize high latency, reward low latency
+                latency_factor = self.environment['observed_multimedia_latency'] / current_state_after_action['latency_tolerance_multimedia']
+                reward -= max(0, latency_factor - 1.0) * 2.0 # Strong penalty if exceeds tolerance
+                reward += (1.0 - latency_factor) * current_state_after_action['responsiveness_weight'] * 1.0 # Reward for being below tolerance
+
+                # Check specific latency targets
+                if 'time_target_seconds' in parsed_intent['constraints']:
+                    target_lat = parsed_intent['constraints']['time_target_seconds']
+                    if self.environment['observed_multimedia_latency'] <= target_lat:
+                        reward += 1.0 # Significant bonus for meeting explicit target
+                    else:
+                        reward -= (self.environment['observed_multimedia_latency'] - target_lat) * 2.0 # Penalty for missing target
+
+            if 'throughput' in parsed_intent['target_metrics']:
+                # Reward high throughput
+                current_throughput = self.environment['observed_background_throughput']
+                reward += (current_throughput / 1000.0) * current_state_after_action['throughput_weight'] * 1.0 # Normalized throughput
+
+                # Check specific throughput targets
+                if 'throughput_target' in parsed_intent['constraints']:
+                    target_thp = parsed_intent['constraints']['throughput_target']
+                    if current_throughput >= target_thp:
+                        reward += 1.0
+                    else:
+                        reward -= (target_thp - current_throughput) / 500.0
+
+            if 'energy_efficiency' in parsed_intent['target_metrics']:
+                # Reward low energy consumption
+                reward -= (self.environment['observed_energy_consumption'] / 100.0) * current_state_after_action['energy_efficiency_weight'] * 0.5 # Penalty for higher energy
+
+                if 'energy_target_watts' in parsed_intent['constraints']:
+                    target_energy = parsed_intent['constraints']['energy_target_watts']
+                    if self.environment['observed_energy_consumption'] <= target_energy:
+                        reward += 0.5
+                    else:
+                        reward -= (self.environment['observed_energy_consumption'] - target_energy) / 50.0
+
+        # Penalty for violating probability targets (conceptually, over many episodes)
+        # This is more for the overall learning trend than a single instance.
+        # If the actual performance probability (observed success rate over time) is below the target,
+        # it would feed into a meta-learning reward. For a single step, it's indirect.
+
+        # Penalty for large, unnecessary state changes (discourage volatility if not explicitly requested)
+        # Calculate diff between state_before_action and state_after_action
+        change_penalty = 0
+        for param, val_after in state_after_action.items():
+            if param in state_before_action:
+                change_penalty += abs(val_after - state_before_action[param])
+        reward -= change_penalty * 0.1 # Small penalty for change magnitude
+
+        # Boost reward if intent sentiment is positive and goals are met
+        if parsed_intent['sentiment'] > 0 and reward > 0:
+            reward *= 1.2
+        # Penalize more if sentiment is negative and goals are missed
+        elif parsed_intent['sentiment'] < 0 and reward <= 0:
+            reward *= 1.5
+
+        print(f"Calculated reward: {reward:.4f}")
+        return reward
+
+    def _learn_from_outcome(self, action, reward, prob_selected_action, state_before_features, state_after_features):
+        """
+        Implements Actor-Critic learning:
+        1. Critic (Value Network) Update: Learns to predict the value of a state.
+        2. Actor (Policy Network) Update: Learns to take actions that lead to higher rewards.
+        """
+        # Critic Update (Value Network)
+        current_state_value = self._get_state_value(state_before_features)
+        next_state_value = self._get_state_value(state_after_features) # Value of the state AFTER action and environment update
+
+        # Temporal Difference (TD) error: R + gamma * V(s') - V(s)
+        td_target = reward + self.decay_rate * next_state_value
+        td_error = td_target - current_state_value
+
+        # Update Critic (Value Weights)
+        # Apply gradient descent to minimize TD error
+        self.value_weights += self.learning_rate * td_error * state_before_features
+
+        # Actor Update (Policy Network)
+        # Advantage is typically TD_error for simple Actor-Critic
+        advantage = td_error
+
+        # Policy Gradient Update for the selected action
+        # The goal is to increase log(probability of action) for good actions (positive advantage)
+        # and decrease for bad actions (negative advantage).
+        selected_action_str = str(action)
+        
+        # Calculate gradient of log probability w.r.t. policy weights (simplified)
+        # For a linear policy with softmax output, the gradient of log_prob(a|s) w.r.t. W_a is (features - sum(prob_j * features_j))
+        # Here, a simpler form where the gradient is proportional to the state features
+        # and scaled by (1 - prob) or (prob - 1) - this needs careful derivation for true softmax.
+        # For simplicity, we approximate: if an action was good (positive advantage), reinforce its weights.
+        # if an action was bad (negative advantage), weaken its weights.
+        
+        # This is a very simplified policy gradient update for a linear model
+        self.policy_weights[selected_action_str] += self.learning_rate * advantage * state_before_features
+
+        # Optional: Add entropy bonus to encourage exploration (discourage deterministic policies)
+        # entropy_bonus = -np.sum(probabilities * np.log(probabilities + 1e-8)) # Add small epsilon for log(0)
+        # for action_str in self.policy_weights:
+        #     self.policy_weights[action_str] += self.learning_rate * 0.01 * entropy_bonus * state_before_features # Small constant for entropy
+
+        print(f"Learning: TD Error: {td_error:.4f}. Updated Actor and Critic weights.")
+
+
+    def process_and_adapt(self, intent_string):
+        """
+        Processes a user intent using Hyper-Advanced methods.
+        This is the main loop for an interaction.
+        """
+        print("\n--- Processing New Hyper-Advanced Intent ---")
+        print("Intent:", intent_string)
+
+        # 1. Capture current state features (before any action)
+        state_before_features = self.system_features.copy()
+        state_before_params = self.system_state.copy() # Capture current policy parameters
+
+        # 2. Parse the user's intent
+        parsed_intent = self._parse_intent(intent_string)
+
+        if not parsed_intent or (not parsed_intent['goals'] and not parsed_intent['task_types']):
+            print("Could not parse meaningful intent.")
+            return
+
+        # 3. Policy (Actor) selects an action based on current features and intent
+        # (Candidate actions are predefined; the policy learns to choose among them)
+        selected_action, prob_selected_action = self._select_action_probabilistically(state_before_features, parsed_intent)
+
+        # 4. Apply the selected action to the OS's internal state (policy parameters)
+        self.system_state = self._apply_action_to_state(state_before_params, selected_action)
+        print("System state (policy parameters) after action:", {k:f"{v:.3f}" for k,v in self.system_state.items()})
+
+        # 5. Update the simulated environment based on the new system state
+        # This simulates how the OS's internal changes affect real-world performance metrics
+        self._update_environment(self.system_state)
+
+        # 6. Re-capture features of the new state for the Critic
+        state_after_features = self._state_to_features(self.system_state)
+
+        # 7. Calculate the reward based on the outcome in the environment
+        reward = self._calculate_reward(parsed_intent, self.environment, state_before_params, self.system_state)
+
+        # 8. Learn from the outcome (Actor-Critic update)
+        self._learn_from_outcome(selected_action, reward, prob_selected_action, state_before_features, state_after_features)
+
+        # 9. Store history for context and analysis
+        self.action_history.append({
+            'intent': intent_string,
+            'parsed_intent': parsed_intent,
+            'selected_action': selected_action,
+            'prob_selected_action': prob_selected_action,
+            'reward': reward,
+            'state_before_params': state_before_params,
+            'state_after_params': self.system_state.copy(),
+            'environment_after': self.environment.copy()
+        })
+
+        print("--- Hyper-Advanced Intent Processed ---")
+
+
+---
+
+### Demonstration of Hyper-Advanced Simulation
+
+```python
+print("\n\n--- Starting Hyper Advanced Simulation ---")
+
+# Initialize the hyper advanced simulated system
+hyper_adv_sim_os = HyperAdvancedEvolvingOSSimulation(feature_dim=20, learning_rate=0.005) # Increased feature_dim for more complexity
+
+# Process intents, observing state changes and learning
+# Run multiple times to observe learning and adaptation
+for i in range(1):
+    print(f"\n===== Episode {i+1} =====")
+    hyper_adv_sim_os.process_and_adapt("Optimize system responsiveness for multimedia, with an 80% chance within 0.08 seconds. It's urgent!")
+    hyper_adv_sim_os.process_and_adapt("Prioritize background computation, ensure 900 MB/s throughput.")
+    hyper_adv_sim_os.process_and_adapt("Reduce energy consumption to 60 watts. Conserve battery life.")
+    hyper_adv_sim_os.process_and_adapt("I'm experiencing terrible lag with streaming video. Fix it now!")
+    hyper_adv_sim_os.process_and_adapt("Boost network bandwidth for downloads, target 1200 MB/s.")
+    hyper_adv_sim_os.process_and_adapt("Maintain stable CPU usage and minimize memory pressure.")
+    hyper_adv_sim_os.process_and_adapt("Optimize responsiveness for multimedia tasks, with an 80% chance within 0.08 seconds. It's urgent!") # Repeat to see learning effect
+    hyper_adv_sim_os.process_and_adapt("Prioritize background computation, ensure 900 MB/s throughput.") # Repeat
+
+# Inspect final policy parameters and environment state after extensive learning
+print("\n--- Final System State (Policy Parameters) after Hyper Advanced Simulation ---")
+for k, v in hyper_adv_sim_os.system_state.items():
+    print(f"  {k}: {v:.4f}")
+
+print("\n--- Final Environment State ---")
+for k, v in hyper_adv_sim_os.environment.items():
+    print(f"  {k}: {v:.4f}")
+
+print("\n--- Sample of Action History (last 5 entries) ---")
+for entry in list(hyper_adv_sim_os.action_history)[-5:]:
+    print(f"  Intent: {entry['intent']}")
+    print(f"  Action: {entry['selected_action']}")
+    print(f"  Reward: {entry['reward']:.4f}")
+    print(f"  Observed Latency: {entry['environment_after']['observed_multimedia_latency']:.4f}")
+    print(f"  Observed Throughput: {entry['environment_after']['observed_background_throughput']:.4f}")
+    print(f"  Observed Energy: {entry['environment_after']['observed_energy_consumption']:.4f}")
+    print("-" * 20)
+
+# Further analysis could involve plotting trends of parameters, rewards,
+# and environment metrics over many more interactions to truly see learning convergence.
